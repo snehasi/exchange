@@ -8,7 +8,7 @@ class Offer < ApplicationRecord
   with_options primary_key: "uuid" do
     belongs_to :user            , optional: true , foreign_key: "user_uuid"
     belongs_to :issue           , optional: true , foreign_key: "stm_issue_uuid"
-    belongs_to :tracker            , optional: true , foreign_key: "stm_tracker_uuid"
+    belongs_to :tracker         , optional: true , foreign_key: "stm_tracker_uuid"
     has_one    :position                         , foreign_key: "offer_uuid"
     has_one    :prototype_parent                 , foreign_key: "prototype_uuid"        , class_name: "Offer"
     belongs_to :prototype_child , optional: true , foreign_key: "prorotype_uuid"        , class_name: "Offer"
@@ -56,6 +56,14 @@ class Offer < ApplicationRecord
       where("uuid NOT IN (SELECT offer_uuid FROM positions)")
     end
 
+    def with_child
+      where("uuid IN (SELECT prototype_uuid FROM offers)")
+    end
+
+    def without_child
+      where("uuid NOT IN (SELECT prototype_uuid FROM offers where offers.prototype_uuid IS NOT NULL)")
+    end
+
     def by_maturation_range(range)
       where("maturation_range && tsrange(?, ?)", range.begin, range.end)
     end
@@ -70,6 +78,15 @@ class Offer < ApplicationRecord
     def is_sell()    where('type like ?', "Offer::Sell%") end
     def is_unfixed() where('type like ?', "%Unfixed")     end
     def is_fixed()   where('type like ?', "%Fixed")       end
+
+    def expired_by_time() where('expiration < ?', BugmTime.now) end
+
+    def open() where(status: 'open') end
+    def not_open() where.not(status: 'open') end
+    def expired() where(status: 'expired') end
+    def not_expired() where.not(status: 'expired') end
+    def crossed() where(status: 'crossed') end
+    def not_crossed() where.not(status: 'crossed') end
 
     def display_order
       order('maturation_range asc').order('type asc').order('volume asc')
@@ -152,7 +169,7 @@ class Offer < ApplicationRecord
   # ----- INSTANCE METHODS -----
 
   def xid
-    "#{self.intent}-#{xtag}.#{self&.id || 0}"
+    "o#{self.intent[0]}#{xtag[0]}.#{self&.id || 0}"
   end
 
   def attach_type
@@ -250,6 +267,26 @@ class Offer < ApplicationRecord
     self.status == 'open'
   end
 
+  def is_not_open?
+    ! is_open?
+  end
+
+  def is_crossed?
+    self.status == 'crossed'
+  end
+
+  def is_not_crossed?
+    ! is_crossed?
+  end
+
+  def is_expired?
+    self.status == 'expired'
+  end
+
+  def is_not_expired?
+    ! is_expired?
+  end
+
   def deposit
     (self.volume * self.price).to_i
   end
@@ -258,9 +295,6 @@ class Offer < ApplicationRecord
     (self.volume * (1 - self.price)).to_i
   end
 
-  def is_not_open?
-    ! is_open?
-  end
 
   def is_buy?()          self.intent == "buy"                    end
   def is_sell?()         self.intent == "sell"                   end

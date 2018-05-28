@@ -20,6 +20,22 @@ class Position < ApplicationRecord
   # ----- SCOPES -----
 
   class << self
+    def winning
+      joins(:contract).where('"contracts"."awarded_to" = "side"')
+    end
+
+    def losing
+      joins(:contract).where('"contracts"."awarded_to" != "side"')
+    end
+
+    def resolved
+      joins(:contract).where('"contracts"."status" != ?', "open")
+    end
+
+    def unresolved
+      joins(:contract).where('"contracts"."status" = ?', "open")
+    end
+
     def fixed
       where(side: 'fixed')
     end
@@ -38,6 +54,22 @@ class Position < ApplicationRecord
 
   def xtag
     "pos"
+  end
+
+  def counterside
+    case self.side
+    when 'fixed' then 'unfixed'
+    when 'unfixed' then 'fixed'
+    end
+  end
+
+  def counterpositions
+    escrow.positions.where(side: counterside)
+  end
+
+  def counterusers
+    uuids = escrow.positions.where(side: counterside).pluck(:user_uuid)
+    User.where(uuid: uuids)
   end
 
   def dumptree

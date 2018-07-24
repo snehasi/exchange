@@ -13,7 +13,10 @@ class User < ApplicationRecord
     has_many :offers_sell, class_name: "Offer::Sell"
     has_many :offers_su  , class_name: "Offer::Sell::Unfixed"
     has_many :offers_sf  , class_name: "Offer::Sell::Fixed"
+    has_many :groups     , class_name: "UserGroup"     , foreign_key: "owner_uuid"
+    has_many :memberships, class_name: "UserMembership"
     has_many :positions
+    has_many :ledgers    , class_name: "UserLedger"
   end
 
   jsonb_accessor :jfields, :last_session_ended_at => :datetime
@@ -42,8 +45,6 @@ class User < ApplicationRecord
   def new_event_lines
     event_lines.where('created_at > ?', self.last_session_ended_at).order('id desc') #.
   end
-
-
 
   def xtag
     "usr"
@@ -132,13 +133,14 @@ end
 #  admin                  :boolean
 #  auth_token             :string
 #  balance                :float            default(0.0)
+#  xfields                :hstore           not null
 #  jfields                :jsonb            not null
 #  last_seen_at           :datetime
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
-#  name                   :string           not null
-#  email                  :string           not null
-#  mobile                 :string           not null
+#  name                   :string
+#  email                  :string           default(""), not null
+#  mobile                 :string
 #  encrypted_password     :string           default(""), not null
 #  reset_password_token   :string
 #  reset_password_sent_at :datetime

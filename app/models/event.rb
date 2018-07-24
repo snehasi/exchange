@@ -12,6 +12,10 @@ class Event < ApplicationRecord
 
   jsonb_accessor :jfields, :etherscan_url => :string
 
+  def xtag
+    "event"
+  end
+
   class << self
     # generate jsonb fields for a class
     def jsonb_fields_for(field, klas, opts = {})
@@ -73,7 +77,11 @@ class Event < ApplicationRecord
       values:    base_fields.merge(influx_fields)  ,
       timestamp: BugmTime.now.to_i
     }
-    InfluxStats.write_point mname, args
+    begin
+      InfluxStats.write_point mname, args
+    rescue
+      "INFLUX WRITE FAILED"
+    end
   end
 
   def cast_object
@@ -126,6 +134,8 @@ end
 #  payload      :jsonb            not null
 #  jfields      :jsonb            not null
 #  user_uuids   :string           default([]), is an Array
+#  tags         :string
+#  note         :string
 #  projected_at :datetime
 #  created_at   :datetime         not null
 #  updated_at   :datetime         not null

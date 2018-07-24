@@ -11,6 +11,13 @@ group :test_bench do
   gem 'kramdown'
 end
 
+# ----- graphql -----
+gem 'graphql'
+gem 'graphql-batch'
+gem 'graphql-errors'
+gem 'cacheql'
+gem 'graphiql-rails', group: :development
+
 # ----- exchange utilities -----
 gem 'rails'        , '~> 5.2'     # rails
 gem 'pg'           , '~> 1.0'     # postgres support
@@ -56,7 +63,6 @@ gem 'grape-swagger-entity'
 gem 'grape-swagger-rails'
 
 gem 'rack-cors', require: 'rack/cors'
-
 gem 'influxdb-rails'
 
 gem 'factory_bot_rails'          # for data loading in production
